@@ -76,7 +76,6 @@ class condGANTrainer(object):
         zsl_gan_text_encoder = ZLS_GAN_ENCODER()
         zls_gan_saved_data = torch.load(cfg.TRAIN.ZLS_GAN)
         state_dict = zls_gan_saved_data['state_dict_G']
-#         zsl_gan_text_encoder.double()
         zsl_gan_text_encoder.load_state_dict(state_dict)
         for p in zsl_gan_text_encoder.parameters():
             p.requires_grad = False
@@ -385,6 +384,15 @@ class condGANTrainer(object):
             text_encoder = text_encoder.cuda()
             text_encoder.eval()
 
+            zsl_gan_text_encoder = ZLS_GAN_ENCODER()
+            zls_gan_saved_data = torch.load(cfg.TRAIN.ZLS_GAN)
+            state_dict = zls_gan_saved_data['state_dict_G']
+            zsl_gan_text_encoder.load_state_dict(state_dict)
+            print('Load text encoder from:', cfg.TRAIN.ZLS_GAN)
+            zsl_gan_text_encoder.eval()
+            if cfg.CUDA:
+                zsl_gan_text_encoder = zsl_gan_text_encoder.cuda()
+
             batch_size = self.batch_size
             nz = cfg.GAN.Z_DIM
             noise = Variable(torch.FloatTensor(batch_size, nz), volatile=True)
@@ -412,13 +420,17 @@ class condGANTrainer(object):
                     # if step > 50:
                     #     break
 
-                    imgs, captions, cap_lens, class_ids, keys = prepare_data(data)
+                    imgs, captions, tfidfs, cap_lens, class_ids, keys = prepare_data(data)
 
                     hidden = text_encoder.init_hidden(batch_size)
                     # words_embs: batch_size x nef x seq_len
                     # sent_emb: batch_size x nef
-                    words_embs, sent_emb = text_encoder(captions, cap_lens, hidden)
-                    words_embs, sent_emb = words_embs.detach(), sent_emb.detach()
+                    words_embs, _ = text_encoder(captions, cap_lens, hidden)
+                    z = Variable(torch.randn(batch_size, cfg.GAN.Z_DIM_ZLS_GAN))
+                    if cfg.CUDA:
+                        z = z.cuda()
+                    sent_emb_zsl_gan = zsl_gan_text_encoder(z, tfidfs)
+                    words_embs, sent_emb_zsl_gan = words_embs.detach(), sent_emb_zsl_gan.detach()
                     mask = (captions == 0)
                     num_words = words_embs.size(2)
                     if mask.size(1) > num_words:
@@ -428,7 +440,7 @@ class condGANTrainer(object):
                     # (2) Generate fake images
                     ######################################################
                     noise.data.normal_(0, 1)
-                    fake_imgs, _, _, _ = netG(noise, sent_emb, words_embs, mask)
+                    fake_imgs, _, _, _ = netG(noise, sent_emb_zsl_gan, words_embs, mask)
                     for j in range(batch_size):
                         s_tmp = '%s/single/%s' % (save_dir, keys[j])
                         folder = s_tmp[:s_tmp.rfind('/')]
