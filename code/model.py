@@ -567,7 +567,7 @@ class D_NET64(nn.Module):
     def __init__(self, b_jcu=True):
         super(D_NET64, self).__init__()
         ndf = cfg.GAN.DF_DIM
-        nef = cfg.TEXT.EMBEDDING_DIM
+        nef = cfg.TEXT.ZLS_GAN_EMBEDDING_DIM
         self.img_code_s16 = encode_image_by_16times(ndf)
         if b_jcu:
             self.UNCOND_DNET = D_GET_LOGITS(ndf, nef, bcondition=False)
@@ -585,7 +585,7 @@ class D_NET128(nn.Module):
     def __init__(self, b_jcu=True):
         super(D_NET128, self).__init__()
         ndf = cfg.GAN.DF_DIM
-        nef = cfg.TEXT.EMBEDDING_DIM
+        nef = cfg.TEXT.ZLS_GAN_EMBEDDING_DIM
         self.img_code_s16 = encode_image_by_16times(ndf)
         self.img_code_s32 = downBlock(ndf * 8, ndf * 16)
         self.img_code_s32_1 = Block3x3_leakRelu(ndf * 16, ndf * 8)
@@ -608,7 +608,7 @@ class D_NET256(nn.Module):
     def __init__(self, b_jcu=True):
         super(D_NET256, self).__init__()
         ndf = cfg.GAN.DF_DIM
-        nef = cfg.TEXT.EMBEDDING_DIM
+        nef = cfg.TEXT.ZLS_GAN_EMBEDDING_DIM
         self.img_code_s16 = encode_image_by_16times(ndf)
         self.img_code_s32 = downBlock(ndf * 8, ndf * 16)
         self.img_code_s64 = downBlock(ndf * 16, ndf * 32)

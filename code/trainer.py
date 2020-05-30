@@ -259,13 +259,13 @@ class condGANTrainer(object):
                 hidden = text_encoder.init_hidden(batch_size)
                 # words_embs: batch_size x nef x seq_len
                 # sent_emb: batch_size x nef
-                words_embs, sent_emb = text_encoder(captions, cap_lens, hidden)
+                words_embs, _ = text_encoder(captions, cap_lens, hidden)
                 z = Variable(torch.randn(batch_size, cfg.GAN.Z_DIM_ZLS_GAN))
                 if cfg.CUDA:
                     z = z.cuda()
                 sent_emb_zsl_gan = zsl_gan_text_encoder(z, tfidfs)
-                words_embs, sent_emb, sent_emb_zsl_gan = \
-                    words_embs.detach(), sent_emb.detach(), sent_emb_zsl_gan.detach()
+                words_embs, sent_emb_zsl_gan = \
+                    words_embs.detach(), sent_emb_zsl_gan.detach()
                 mask = (captions == 0)
                 num_words = words_embs.size(2)
                 if mask.size(1) > num_words:
@@ -285,7 +285,7 @@ class condGANTrainer(object):
                 for i in range(len(netsD)):
                     netsD[i].zero_grad()
                     errD = discriminator_loss(netsD[i], imgs[i], fake_imgs[i],
-                                              sent_emb, real_labels, fake_labels)
+                                              sent_emb_zsl_gan, real_labels, fake_labels)
                     # backward and update parameters
                     errD.backward()
                     optimizersD[i].step()
@@ -304,7 +304,7 @@ class condGANTrainer(object):
                 netG.zero_grad()
                 errG_total, G_logs = \
                     generator_loss(netsD, image_encoder, fake_imgs, real_labels,
-                                   words_embs, sent_emb, match_labels, cap_lens, class_ids)
+                                   words_embs, sent_emb_zsl_gan, match_labels, cap_lens, class_ids)
                 kl_loss = KL_loss(mu, logvar)
                 errG_total += kl_loss
                 G_logs += 'kl_loss: %.2f ' % kl_loss.data[0]
