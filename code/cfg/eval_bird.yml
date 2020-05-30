@@ -12,10 +12,11 @@ TREE:
 
 TRAIN:
     FLAG: False
-    NET_G: '../models/bird_AttnGAN2.pth'
+    NET_G: '../output/birds_attn2_2020_05_30_16_21_29_only_for_gen/Model/netG_epoch_200.pth'
     B_NET_D: False
     BATCH_SIZE: 100
-    NET_E: '../DAMSMencoders/bird/text_encoder200.pth'
+    NET_E: '../DAMSMencoders/bird/text_encoder550.pth'
+    ZLS_GAN: '../models/bird/zls_gan.tar'
 
 
 GAN:
@@ -25,6 +26,8 @@ GAN:
     R_NUM: 2
 
 TEXT:
+    TFIDF_VECTORIZER_PATH: '../models/bird/tf_idf_vectorizer.pkl'
     EMBEDDING_DIM: 256
+    TFIDF_DIM: 7549
     CAPTIONS_PER_IMAGE: 10
     WORDS_NUM: 25

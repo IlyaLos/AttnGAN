@@ -38,7 +38,6 @@ GAN:
 
 TEXT:
     TFIDF_VECTORIZER_PATH: '../models/bird/tf_idf_vectorizer.pkl'
-    ZLS_GAN_EMBEDDING_DIM: 3584
     EMBEDDING_DIM: 256
     TFIDF_DIM: 7549
     CAPTIONS_PER_IMAGE: 10
