@@ -36,53 +36,46 @@ def parse_args():
 def gen_example(wordtoix, algo, text_processor):
     '''generate images from example sentences'''
     from nltk.tokenize import RegexpTokenizer
-    filepath = '%s/example_filenames.txt' % (cfg.DATA_DIR)
-    data_dic = {}
+
+    filepath = '%s/manual_test_examples.txt' % (cfg.DATA_DIR)
     with open(filepath, "r") as f:
-        filenames = f.read().decode('utf8').split('\n')
-        for name in filenames:
-            if len(name) == 0:
+        sentences = f.read().decode('utf8').split('\n')
+        # a list of indices for a sentence
+        captions = []
+        tfidfs = []
+        cap_lens = []
+        for sent in sentences:
+            if len(sent) == 0:
                 continue
-            filepath = '%s/%s.txt' % (cfg.DATA_DIR, name)
-            with open(filepath, "r") as f:
-                print('Load from:', name)
-                sentences = f.read().decode('utf8').split('\n')
-                # a list of indices for a sentence
-                captions = []
-                tfidfs = []
-                cap_lens = []
-                for sent in sentences:
-                    if len(sent) == 0:
-                        continue
-                    tfidfs.append(text_processor.get_tfidf(text_processor.preprocess_text(sent.lower())))
-                    sent = sent.replace("\ufffd\ufffd", " ")
-                    tokenizer = RegexpTokenizer(r'\w+')
-                    tokens = tokenizer.tokenize(sent.lower())
-                    if len(tokens) == 0:
-                        print('sent', sent)
-                        continue
+            tfidfs.append(text_processor.get_tfidf(text_processor.preprocess_text(sent.lower())))
+            sent = sent.replace("\ufffd\ufffd", " ")
+            tokenizer = RegexpTokenizer(r'\w+')
+            tokens = tokenizer.tokenize(sent.lower())
+            if len(tokens) == 0:
+                print('sent', sent)
+                continue
 
-                    rev = []
-                    for t in tokens:
-                        t = t.encode('ascii', 'ignore').decode('ascii')
-                        if len(t) > 0 and t in wordtoix:
-                            rev.append(wordtoix[t])
-                    captions.append(rev)
-                    cap_lens.append(len(rev))
-            max_len = np.max(cap_lens)
+            rev = []
+            for t in tokens:
+                t = t.encode('ascii', 'ignore').decode('ascii')
+                if len(t) > 0 and t in wordtoix:
+                    rev.append(wordtoix[t])
+            captions.append(rev)
+            cap_lens.append(len(rev))
+        max_len = np.max(cap_lens)
 
-            sorted_indices = np.argsort(cap_lens)[::-1]
-            cap_lens = np.asarray(cap_lens)
-            cap_lens = cap_lens[sorted_indices]
-            cap_array = np.zeros((len(captions), max_len), dtype='int64')
-            for i in range(len(captions)):
-                idx = sorted_indices[i]
-                cap = captions[idx]
-                c_len = len(cap)
-                cap_array[i, :c_len] = cap
-            key = name[(name.rfind('/') + 1):]
-            data_dic[key] = [cap_array, tfidfs, cap_lens, sorted_indices]
-    algo.gen_example(data_dic)
+        sorted_indices = np.argsort(cap_lens)[::-1]
+        cap_lens = np.asarray(cap_lens)
+        cap_lens = cap_lens[sorted_indices]
+        cap_array = np.zeros((len(captions), max_len), dtype='int64')
+        tfidfs = np.array(tfidfs)[sorted_indices].astype(np.float32)
+        for i in range(len(captions)):
+            idx = sorted_indices[i]
+            cap = captions[idx]
+            c_len = len(cap)
+            cap_array[i, :c_len] = cap
+
+    algo.gen_example(cap_array, tfidfs, cap_lens, sorted_indices)
 
 
 if __name__ == "__main__":
